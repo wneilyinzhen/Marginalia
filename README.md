@@ -7,7 +7,7 @@ means. Only then can you ask the AI about it — and the AI is forbidden from
 summarizing the paper, volunteering takeaways, or blending what the document
 says with what it happens to know.
 
-**[Open it →](https://wneilyinzhen.github.io/marginalia/)**
+**[Open it →](https://wneilyinzhen.github.io/Marginalia/)**
 
 ---
 
