@@ -96,7 +96,7 @@ gets its own window and works offline apart from the AI.
 **Run it yourself:**
 
 ```bash
-git clone https://github.com/YOURNAME/marginalia.git
+git clone https://github.com/wneilyinzhen/marginalia.git
 cd marginalia
 python -m http.server 8000
 ```
