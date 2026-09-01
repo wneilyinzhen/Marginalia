@@ -281,14 +281,35 @@ $("btnNext").addEventListener("click", () => goToPage(Math.min(state.pageCount, 
    ZOOM
    ============================================================= */
 
+/* Rebuilding the pages resets the scroll box to the top, so record
+   where you actually are — page and the fraction you're through it —
+   and restore it once the browser has laid the new pages out. */
+async function relayoutKeepingPlace() {
+  const reader = $("reader");
+  const anchor = state.pageNum;
+
+  const before = $("stage").querySelector(`.page[data-page="${anchor}"]`);
+  const within = before && before.offsetHeight
+    ? (reader.scrollTop - before.offsetTop) / before.offsetHeight
+    : 0;
+
+  await layoutPages();
+
+  await new Promise((resolve) => requestAnimationFrame(resolve));
+
+  const after = $("stage").querySelector(`.page[data-page="${anchor}"]`);
+  if (after) reader.scrollTop = after.offsetTop + within * after.offsetHeight - 16;
+
+  state.pageNum = anchor;
+  updateChrome();
+}
+
 async function setZoom(next) {
   const clamped = Math.min(ZOOM_MAX, Math.max(ZOOM_MIN, next));
   if (!state.pdf || Math.abs(clamped - state.zoom) < 0.001) return;
 
-  const anchor = state.pageNum;
   state.zoom = clamped;
-  await layoutPages();
-  goToPage(anchor, false);
+  await relayoutKeepingPlace();
   rememberPlace();
 }
 
@@ -305,11 +326,8 @@ $("reader").addEventListener("wheel", (e) => {
 let resizeTimer;
 window.addEventListener("resize", () => {
   clearTimeout(resizeTimer);
-  resizeTimer = setTimeout(async () => {
-    if (!state.pdf) return;
-    const anchor = state.pageNum;
-    await layoutPages();
-    goToPage(anchor, false);
+  resizeTimer = setTimeout(() => {
+    if (state.pdf) relayoutKeepingPlace();
   }, 250);
 });
 
@@ -383,9 +401,13 @@ document.addEventListener("mouseup", handleSelection);
 async function handleSelection() {
   if (!state.pdf || state.boardOpen || state.mode === "capture") return;
 
-  // marking switched off: let the browser's own selection behave
-  // like it does on any other page, and save nothing
-  if (!state.kind) return;
+  /* No colour armed: don't mark anything yet. Hold the selection
+     and offer the colours next to it, so choosing one is a single
+     click without leaving the paragraph. */
+  if (!state.kind) {
+    holdSelection();
+    return;
+  }
 
   const selection = window.getSelection();
   if (!selection || selection.isCollapsed) return;
@@ -430,6 +452,106 @@ async function handleSelection() {
     garbled,
   });
 }
+
+
+/* =============================================================
+   THE SELECTION MENU
+   ============================================================= */
+
+let pendingSelection = null;
+
+function holdSelection() {
+  const selection = window.getSelection();
+  if (!selection || selection.isCollapsed) return;
+
+  const anchorEl = selection.anchorNode &&
+    (selection.anchorNode.nodeType === 1 ? selection.anchorNode : selection.anchorNode.parentElement);
+  const layer = anchorEl && anchorEl.closest(".textlayer");
+  if (!layer) return;
+
+  const host = layer.closest(".page");
+  const pageNum = Number(host.dataset.page);
+  const range = selection.getRangeAt(0);
+  const text = textFromRange(range);
+  if (text.length < 3) return;
+
+  const pageBox = host.getBoundingClientRect();
+  const vp = state.viewports[pageNum];
+
+  const rects = [];
+  for (const r of range.getClientRects()) {
+    if (r.width < 1 || r.height < 1) continue;
+    rects.push({
+      x: (r.left - pageBox.left) / vp.width,
+      y: (r.top  - pageBox.top)  / vp.height,
+      w: r.width  / vp.width,
+      h: r.height / vp.height,
+    });
+  }
+  if (!rects.length) return;
+
+  pendingSelection = { page: pageNum, text, rects };
+
+  // put the menu just above the selection, or below if there's no room
+  const box = range.getBoundingClientRect();
+  showSelectionMenu(box);
+}
+
+function showSelectionMenu(box) {
+  let menu = $("selMenu");
+  if (!menu) {
+    menu = document.createElement("div");
+    menu.id = "selMenu";
+    menu.className = "markmenu";
+    document.body.appendChild(menu);
+  }
+
+  menu.innerHTML =
+    `<span class="mmlabel">Mark</span>` +
+    COLORS.map((c) => `
+      <button class="mmswatch" data-mark="${c.id}"
+              style="--sw: var(${c.css})" title="${c.id}"></button>`).join("");
+
+  menu.hidden = false;
+
+  const width = 220;
+  const above = box.top - 46;
+  menu.style.left = Math.max(8, Math.min(box.left + box.width / 2 - width / 2,
+                                         window.innerWidth - width - 10)) + "px";
+  menu.style.top = (above > 60 ? above : box.bottom + 10) + "px";
+
+  menu.querySelectorAll("[data-mark]").forEach((b) =>
+    b.addEventListener("mousedown", async (e) => {
+      // mousedown, not click — a click would clear the selection first
+      e.preventDefault();
+      const held = pendingSelection;
+      hideSelectionMenu();
+      if (!held) return;
+      window.getSelection().removeAllRanges();
+
+      const garbled = looksGarbled(held.text);
+      await addMark({
+        page: held.page,
+        kind: b.dataset.mark,
+        body: garbled ? "figure" : "text",
+        text: held.text,
+        rects: held.rects,
+        image: garbled ? snapshotOfRects(held.page, held.rects) : null,
+        garbled,
+      });
+    }));
+}
+
+function hideSelectionMenu() {
+  const menu = $("selMenu");
+  if (menu) menu.hidden = true;
+  pendingSelection = null;
+}
+
+document.addEventListener("mousedown", (e) => {
+  if (!e.target.closest("#selMenu")) hideSelectionMenu();
+});
+$("reader").addEventListener("scroll", hideSelectionMenu);
 
 
 /* =============================================================

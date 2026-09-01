@@ -11,11 +11,7 @@
 async function setDesk(open) {
   state.deskOpen = open;
   document.body.classList.toggle("desk-open", open);
-  if (state.pdf) {
-    const anchor = state.pageNum;
-    await layoutPages();
-    goToPage(anchor, false);
-  }
+  if (state.pdf) await relayoutKeepingPlace();
 }
 
 $("btnDesk").addEventListener("click", () => setDesk(!state.deskOpen));

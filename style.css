@@ -1063,3 +1063,12 @@ body.no-marking .textlayer ::selection { background: rgba(0,0,0,.16); }
 .mmbtn:hover { background: var(--hover); }
 .mmbtn.danger { color: var(--danger); }
 .mmbtn.danger:hover { background: rgba(220,38,38,.09); }
+
+/* the label on the selection menu */
+.mmlabel {
+  font-size: 11.5px;
+  font-weight: 550;
+  color: var(--ink-3);
+  padding: 0 4px 0 3px;
+  user-select: none;
+}

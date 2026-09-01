@@ -6,7 +6,7 @@
 /* Bump this whenever you change a file. It prints on load, so a
    stale cached script is visible immediately instead of showing up
    as a button that mysteriously does nothing. */
-const BUILD = "2026-09-01c";
+const BUILD = "2026-09-01d";
 
 const COLORS = [
   { id: "yellow", css: "--c-yellow" },
@@ -56,7 +56,7 @@ const state = {
   deskOpen: false, boardOpen: false, libraryOpen: false, searchOpen: false,
   mode: "select",
   marks: [], links: [], deleted: [],
-  kind: "yellow", focusId: null,
+  kind: null, focusId: null,
   filterColors: null,          // null = show everything
   canvasEl: null, dpr: 1, topZ: 10,
   subjectFilter: "__all__",

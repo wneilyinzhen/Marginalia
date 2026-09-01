@@ -277,11 +277,24 @@ async function writePaperFolder(paper, marks) {
     }
 
     if (isOpenPaper) {
+      /* Only touch the screen if the merge actually changed something.
+
+         This runs a couple of seconds after you stop typing, and
+         re-rendering the panel replaces the textarea you are writing
+         in — which silently moves focus to the page, so the next
+         letters you type are read as keyboard shortcuts. */
+      const changed = marks.length !== state.marks.length || after !== weigh(state.marks);
+      const typing = document.activeElement &&
+                     document.activeElement.matches("textarea, input");
+
       state.marks = marks;
       state.links = mergeLinkLists(state.links, onDisk.links, deleted);
       state.deleted = deleted;
-      if (typeof renderDesk === "function") renderDesk();
-      if (typeof paintAllHighlights === "function") paintAllHighlights();
+
+      if (changed && !typing) {
+        if (typeof renderDesk === "function") renderDesk();
+        if (typeof paintAllHighlights === "function") paintAllHighlights();
+      }
     }
   }
 
