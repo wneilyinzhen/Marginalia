@@ -85,9 +85,7 @@
     <button class="btn" id="btnTakeaway" title="A takeaway built from YOUR notes">Takeaway</button>
     <button class="btn" id="btnAddNote" title="New note of your own">+ Note</button>
     <button class="btn" id="btnTidy" title="Re-arrange into a grid">Tidy</button>
-    <button class="btn" id="btnExportPdf" title="Save the board as a PDF">Export PDF</button>
-    <button class="btn" id="btnExportMd" title="Save the notes as Markdown">Export MD</button>
-    <button class="btn" id="btnHandoff" title="Everything as one file for claude.ai — right-click to copy instead">Handoff</button>
+    <button class="btn" id="btnExport" title="Export this reading">Export</button>
     <button class="btn" id="btnBoardClose">Close</button>
   </div>
   <div class="boardwrap">
@@ -145,6 +143,50 @@
     <div class="searchcol">
       <div class="searchhead" id="searchNotesHead">In my notes</div>
       <div class="searchresults" id="searchNotes"></div>
+    </div>
+  </div>
+</div>
+
+<!-- export -->
+<div class="modal" id="exportModal" hidden>
+  <div class="modalcard wide">
+    <h2>Export this reading</h2>
+    <p id="exportSummary"></p>
+
+    <div class="exportopt">
+      <div class="exporttext">
+        <h3>Annotated PDF</h3>
+        <p>Your marks and interpretations in two columns with blank space under
+           each, for writing on in Notability or GoodNotes.</p>
+      </div>
+      <button class="btn primary" id="btnExportPdf">Save PDF</button>
+    </div>
+
+    <div class="exportopt">
+      <div class="exporttext">
+        <h3>Markdown</h3>
+        <p>Plain text for Obsidian, grep, or version control. Includes the links
+           you drew between marks. The format most likely to still open in
+           fifteen years.</p>
+      </div>
+      <button class="btn primary" id="btnExportMd">Save .md</button>
+    </div>
+
+    <div class="exportopt">
+      <div class="exporttext">
+        <h3>Handoff to a chat</h3>
+        <p>Everything &mdash; the rules, your marks, your interpretations, the
+           links, and every exchange so far &mdash; as one file. Attach it and
+           the PDF to claude.ai and carry on without spending API tokens.</p>
+      </div>
+      <div class="exportbtns">
+        <button class="btn" id="btnHandoffCopy">Copy</button>
+        <button class="btn primary" id="btnHandoff">Save .md</button>
+      </div>
+    </div>
+
+    <div class="modalrow">
+      <button class="btn" id="btnExportClose">Close</button>
     </div>
   </div>
 </div>

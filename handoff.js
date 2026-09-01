@@ -131,5 +131,4 @@ async function copyHandoff() {
   }
 }
 
-$("btnHandoff").addEventListener("click", downloadHandoff);
-$("btnHandoff").addEventListener("contextmenu", (e) => { e.preventDefault(); copyHandoff(); });
+/* The buttons for these live in the export panel, wired in export.js. */
