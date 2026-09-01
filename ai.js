@@ -128,20 +128,64 @@ const PRESETS = [
    KEY MANAGEMENT
    ============================================================= */
 
+/* Write only the fields given, keeping whatever else is stored.
+   The old version replaced the whole record, so a scope change
+   could write back a null key if it ran before the key loaded. */
+async function patchAiSettings(fields) {
+  const current = (await dbGet("settings", "ai")) || {};
+  await dbPut("settings", { ...current, ...fields, id: "ai" });
+}
+
+const KEY_MIRROR = "marginalia:apikey";
+
 async function loadAiSettings() {
   const record = await dbGet("settings", "ai");
+
   if (record) {
     ai.key = record.key || null;
     ai.model = record.model || "claude-sonnet-5";
     ai.scope = record.scope || "near";
   }
+
+  // Second copy in localStorage. Belt and braces: the two are
+  // evicted under different conditions, so one usually survives.
+  if (!ai.key) {
+    const mirrored = localStorage.getItem(KEY_MIRROR);
+    if (mirrored) {
+      ai.key = mirrored;
+      await patchAiSettings({ key: mirrored });
+    }
+  }
+
   setScope(ai.scope);
   updateAiBadge();
+  requestPersistentStorage();
 }
 
 async function saveAiSettings() {
-  await dbPut("settings", { id: "ai", key: ai.key, model: ai.model, scope: ai.scope });
+  await patchAiSettings({ key: ai.key, model: ai.model, scope: ai.scope });
+  if (ai.key) localStorage.setItem(KEY_MIRROR, ai.key);
+  else localStorage.removeItem(KEY_MIRROR);
   updateAiBadge();
+}
+
+/* Ask Chrome not to evict this site's storage.
+
+   By default a browser may clear IndexedDB when disk gets tight,
+   and it does that without asking. That would take your papers and
+   notes with it, not just the key. Granted automatically once the
+   site looks used — bookmarked, installed, or visited often. */
+async function requestPersistentStorage() {
+  if (!navigator.storage || !navigator.storage.persist) return;
+  try {
+    if (await navigator.storage.persisted()) return;
+    const granted = await navigator.storage.persist();
+    console.log(granted
+      ? "storage marked persistent — Chrome won't evict your notes"
+      : "storage not yet persistent; bookmark or install the app and it will be");
+  } catch (err) {
+    console.log("persistence request failed", err.message);
+  }
 }
 
 function updateAiBadge() {
@@ -153,9 +197,30 @@ function updateAiBadge() {
 function openAiModal() {
   $("aiKeyInput").value = ai.key || "";
   $("aiModelInput").value = ai.model;
+
+  const status = $("aiStatus");
+  if (ai.key) {
+    const tail = ai.key.slice(-6);
+    status.innerHTML = `<span class="ok">Saved in this browser</span> &middot; ` +
+                       `key ending <code>${escapeHtml(tail)}</code>`;
+    $("btnAiForget").hidden = false;
+  } else {
+    status.innerHTML = `No key stored yet.`;
+    $("btnAiForget").hidden = true;
+  }
+
   $("aiModal").hidden = false;
   $("aiKeyInput").focus();
 }
+
+$("btnAiForget").addEventListener("click", async () => {
+  if (!confirm("Remove the stored API key from this browser?")) return;
+  ai.key = null;
+  await saveAiSettings();
+  $("aiKeyInput").value = "";
+  $("aiModal").hidden = true;
+  toast("Key removed");
+});
 
 $("btnAi").addEventListener("click", openAiModal);
 $("btnAiCancel").addEventListener("click", () => { $("aiModal").hidden = true; });
@@ -574,7 +639,7 @@ function setScope(scope) {
   ai.scope = scope;
   $("scopeNear").classList.toggle("on", scope === "near");
   $("scopeAll").classList.toggle("on", scope === "all");
-  dbPut("settings", { id: "ai", key: ai.key, model: ai.model, scope });
+  patchAiSettings({ scope });
 }
 
 loadAiSettings();

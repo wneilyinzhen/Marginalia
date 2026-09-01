@@ -5,6 +5,12 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Marginalia</title>
 
+<meta name="description" content="A PDF reader for people who want to read the paper themselves.">
+<meta name="theme-color" content="#F7F7F8">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon.svg">
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <link rel="stylesheet" href="style.css">
 </head>
@@ -150,11 +156,14 @@
     <p>Your own Anthropic API key, from console.anthropic.com. It stays in this
        browser and is never written to the sync folder. Calls go straight from
        this page to the API &mdash; there is no server in between.</p>
+    <div class="aistatus" id="aiStatus"></div>
     <label>API key</label>
     <input id="aiKeyInput" type="password" placeholder="sk-ant-..." autocomplete="off">
     <label>Model</label>
     <input id="aiModelInput" placeholder="claude-sonnet-5">
     <div class="modalrow">
+      <button class="btn" id="btnAiForget" hidden>Forget key</button>
+      <span style="flex:1"></span>
       <button class="btn" id="btnAiCancel">Cancel</button>
       <button class="btn primary" id="btnAiSave">Save &amp; test</button>
     </div>
@@ -170,5 +179,18 @@
 <script src="export.js"></script>
 <script src="ai.js"></script>
 <script src="handoff.js"></script>
+
+<script>
+  /* Register the service worker so the app is installable and opens
+     offline. It only caches the app's own files — papers and notes
+     live in IndexedDB and your sync folder. Skipped on file://,
+     where service workers aren't allowed. */
+  if ("serviceWorker" in navigator && location.protocol !== "file:") {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("sw.js").catch((err) =>
+        console.log("service worker not registered:", err.message));
+    });
+  }
+</script>
 </body>
 </html>

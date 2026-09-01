@@ -9,7 +9,7 @@
    will keep serving the old one.
    --------------------------------------------------------------- */
 
-const CACHE_VERSION = "marginalia-v1";
+const CACHE_VERSION = "marginalia-v2";
 
 const SHELL = [
   "./",
@@ -58,8 +58,10 @@ self.addEventListener("fetch", (event) => {
     event.respondWith(
       caches.match(event.request).then((hit) =>
         hit || fetch(event.request).then((response) => {
-          const copy = response.clone();
-          caches.open(CACHE_VERSION).then((cache) => cache.put(event.request, copy));
+          if (response.ok) {
+            const copy = response.clone();
+            caches.open(CACHE_VERSION).then((cache) => cache.put(event.request, copy));
+          }
           return response;
         })
       )
@@ -75,8 +77,13 @@ self.addEventListener("fetch", (event) => {
   event.respondWith(
     fetch(event.request)
       .then((response) => {
-        const copy = response.clone();
-        caches.open(CACHE_VERSION).then((cache) => cache.put(event.request, copy));
+        // Only keep successful responses. Caching a 404 means the
+        // browser keeps serving that 404 long after the file is
+        // fixed, which is maddening and hard to diagnose.
+        if (response.ok) {
+          const copy = response.clone();
+          caches.open(CACHE_VERSION).then((cache) => cache.put(event.request, copy));
+        }
         return response;
       })
       .catch(() => caches.match(event.request))
