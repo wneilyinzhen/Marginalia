@@ -19,8 +19,7 @@ have written down what *you* think the passage means.
 
 ## What it does
 
-**You read. You highlight.** Six colours, no assigned meanings — you decide what
-each one is for, and you can change your mind halfway through. Press `C` and
+**You read. You highlight.** Press `C` and
 drag a box to capture a plot or an equation as an image instead.
 
 **Every highlight becomes a note.** It lands in the side panel with an empty
