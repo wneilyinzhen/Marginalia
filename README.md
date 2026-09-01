@@ -19,7 +19,8 @@ have written down what *you* think the passage means.
 
 ## What it does
 
-**You read. You highlight.** Press `C` and
+**You read. You highlight.** Six colours, no assigned meanings — you decide what
+each one is for, and you can change your mind halfway through. Press `C` and
 drag a box to capture a plot or an equation as an image instead.
 
 **Every highlight becomes a note.** It lands in the side panel with an empty
@@ -41,9 +42,13 @@ on from what was just said.
 
 ## What the AI will and won't do
 
-First, you can connect Marginalia directly to your API address for in-situ conversation. Or, you can export your note and conversation to your chat bot using export function.
+There are two ways to use it. Connect your own API key for conversations right
+inside the reader, next to the passage you're looking at. Or skip the key
+entirely and use **Export → Handoff**, which packages your marks, your
+interpretations and your questions into one file you can hand to any chatbot.
 
-Four rules, and they are the product rather than a disclaimer.
+Whichever you pick, four rules hold. They are the product rather than a
+disclaimer.
 
 **It never summarizes the paper.** It has the full text so it can be accurate,
 not so it can retell it. It answers the question you asked about the passage you
@@ -99,13 +104,48 @@ arrows you drew. The format most likely to still open in fifteen years.
 
 **Handoff to a chat** — everything as one file: the rules above, your marks,
 your interpretations, the links, and every exchange so far. Attach it and the
-PDF to claude.ai and carry on there under your agentic AI subscription model instead of paying
+PDF to claude.ai and carry on there under your subscription instead of paying
 per token.
 
-Everything also mirrors continuously to a folder you choose — one directory per
-paper, with a `notes.json` you can read in any text editor and figures as
-ordinary PNGs. Put that folder in OneDrive or Dropbox and your library follows
-you between machines.
+---
+
+## Your papers live in a folder you own
+
+Click **Folder** in the top bar and pick a directory. From then on everything
+you do is mirrored there, a few seconds after you stop typing.
+
+```
+Papers/
+  Thin Film Stress Review/
+    paper.pdf          the PDF itself
+    notes.json         your marks, interpretations, links, conversations
+    text.json          the extracted text
+    figures/
+      a3f9x2.png       plots and equations you captured
+  Surface Acoustic Waves/
+    ...
+```
+
+Nothing there is locked up. Open `notes.json` in Notepad and you can read your
+own interpretations as plain text. The figures are ordinary PNGs. If this
+project disappeared tomorrow, your reading would still be sitting on your disk
+in formats anything can open.
+
+**Why bother, when the app already remembers things?** Because browser storage
+is not a safe place to keep years of work. A routine "clear browsing data" wipes
+it without asking. The folder is the durable copy; the browser is a cache of it.
+
+**Moving between computers.** Put the folder in OneDrive, Dropbox, or iCloud.
+On the second machine, open Marginalia, click **Folder**, and choose the same
+directory. Your whole library appears — papers, notes, board layouts, and past
+conversations. Work on either machine and both stay in step.
+
+**You have to do this once per computer, and once per browser profile.** Chrome
+will not let a folder permission travel between machines, which is the point of
+it being a permission. It takes one click and it's remembered afterwards.
+
+**Chrome or Edge only.** Firefox and Safari haven't shipped the API this uses.
+Everything else in Marginalia works everywhere; only the folder doesn't.
 
 ---
 
@@ -145,8 +185,6 @@ of a cent per question. A meter under the ask box shows what you've spent.
 
 > A key held in a browser is readable by anyone with access to that computer.
 > Fine on your own machine; set a spend limit in the console anyway.
-
-Otherwise, use Export -- Handoff to your AI chat to continue discussion there.
 
 ---
 
