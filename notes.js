@@ -531,6 +531,11 @@ document.addEventListener("keydown", (e) => {
   if (state.searchOpen)  { if (e.key === "Escape") setSearch(false); return; }
   if (state.libraryOpen) { if (e.key === "Escape") setLibrary(false); return; }
   if (state.boardOpen) {
+    // Escape closes the export panel first, then the board
+    if (e.key === "Escape" && !$("exportModal").hidden) {
+      $("exportModal").hidden = true;
+      return;
+    }
     if (e.key === "Escape" || e.key === "b" || e.key === "B") setBoard(false);
     return;
   }
@@ -560,6 +565,21 @@ document.addEventListener("keydown", (e) => {
 /* =============================================================
    START
    ============================================================= */
+
+/* If the HTML and the scripts are different versions — usually a
+   stale service worker cache — buttons silently do nothing. Say so
+   instead. */
+(function checkWiring() {
+  const required = ["btnExport", "btnExportPdf", "btnExportMd", "btnHandoff",
+                    "btnHandoffCopy", "btnQuestion", "btnAi", "btnSearch"];
+  const missing = required.filter((id) => !document.getElementById(id));
+  if (missing.length) {
+    console.error("missing elements — index.html is out of step with the scripts:", missing);
+    console.error("Fix: F12 → Application → Service Workers → Unregister, then reload.");
+  } else {
+    console.log("Marginalia build " + BUILD + " — all controls wired");
+  }
+})();
 
 renderDesk();
 listPapers().then((papers) => {

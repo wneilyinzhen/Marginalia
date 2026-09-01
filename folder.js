@@ -179,6 +179,66 @@ function dataUrlToBlob(dataUrl) {
 
 
 /* =============================================================
+   MERGING
+
+   Two copies of the same paper can both hold real work: you wrote
+   a note on the laptop, asked a question on the desktop. Choosing
+   one whole copy over the other throws half of it away.
+
+   So marks are merged one at a time. For each mark the richer
+   version wins field by field — the longer note, the longer
+   thread, whichever has an image, whichever has a board position.
+   Nothing is discarded because it happened to be saved second.
+   ============================================================= */
+
+function mergeMark(a, b) {
+  const out = { ...a };
+
+  if ((b.note || "").length > (a.note || "").length) out.note = b.note;
+
+  const threadA = a.thread || [];
+  const threadB = b.thread || [];
+  out.thread = threadB.length > threadA.length ? threadB : threadA;
+
+  out.image = a.image || b.image || null;
+  if (a.garbled || b.garbled) out.garbled = true;
+
+  if (out.x == null && b.x != null) { out.x = b.x; out.y = b.y; }
+  if (!out.text && b.text) out.text = b.text;
+
+  return out;
+}
+
+function mergeMarkLists(mine, theirs) {
+  const byId = new Map();
+  for (const m of theirs || []) byId.set(m.id, m);
+  for (const m of mine || []) {
+    const other = byId.get(m.id);
+    byId.set(m.id, other ? mergeMark(m, other) : m);
+  }
+  return [...byId.values()];
+}
+
+function mergeLinkLists(mine, theirs) {
+  const byId = new Map();
+  for (const l of theirs || []) byId.set(l.id, l);
+  for (const l of mine || []) byId.set(l.id, l);
+  return [...byId.values()];
+}
+
+/* How much real work a set of marks represents. Used only to log
+   a warning when a write would shrink what's on disk. */
+function weigh(marks) {
+  let n = 0;
+  for (const m of marks || []) {
+    n += (m.note || "").length;
+    n += (m.thread || []).reduce((sum, t) => sum + (t.a || "").length, 0);
+  }
+  return n;
+}
+
+
+/* =============================================================
    WRITING OUT
 
    Images are written as real PNG files rather than base64 inside
@@ -190,20 +250,30 @@ async function writePaperFolder(paper, marks) {
   const root = folderState.handle;
   const dir = await root.getDirectoryHandle(safeName(paper.title), { create: true });
 
-  /* Guard against wiping good work.
-
-     If this browser thinks the paper has few or no marks but the
-     folder already holds many, something is wrong — usually the
-     folder was connected after the paper was opened, so the app
-     never loaded what was on disk. Refuse the write rather than
-     destroy it. */
+  /* Never overwrite blind. Read what's already there and fold it
+     in, so a copy of this paper that was edited elsewhere keeps its
+     notes and its conversations. */
   const onDisk = await readJson(dir, "notes.json");
-  if (onDisk && onDisk.marks && onDisk.marks.length > marks.length + 1) {
-    console.warn(
-      `Refused to overwrite "${paper.title}": ${onDisk.marks.length} marks on disk, ` +
-      `only ${marks.length} loaded here. Reopen the paper to pull the folder copy in.`
-    );
-    return;
+
+  if (onDisk && onDisk.marks) {
+    const before = weigh(onDisk.marks);
+    marks = mergeMarkLists(marks, onDisk.marks);
+    const after = weigh(marks);
+
+    if (after < before) {
+      console.warn(
+        `Refusing to shrink "${paper.title}" on disk ` +
+        `(${before} → ${after} characters of your writing). Nothing written.`);
+      return;
+    }
+
+    // keep the merged version in the browser too, so the two agree
+    if (paper.id === state.docId) {
+      state.marks = marks;
+      state.links = mergeLinkLists(state.links, onDisk.links);
+      if (typeof renderDesk === "function") renderDesk();
+      if (typeof paintAllHighlights === "function") paintAllHighlights();
+    }
   }
 
   // the PDF, written once — no point rewriting megabytes every save
@@ -303,10 +373,6 @@ async function syncPaperFromFolder(docId) {
     const notes = await readJson(handle, "notes.json");
     if (!notes || notes.id !== docId) continue;
 
-    const local = await dbGet("notes", docId);
-    const localStamp = local ? (local.savedAt || 0) : -1;
-    if (notes.savedAt <= localStamp) return false;
-
     let figuresDir = null;
     for (const mark of notes.marks) {
       if (typeof mark.image === "string" && mark.image.startsWith("figures/")) {
@@ -318,9 +384,17 @@ async function syncPaperFromFolder(docId) {
       }
     }
 
+    // fold the folder copy into whatever this browser already has
+    const local = await dbGet("notes", docId);
+    const merged = mergeMarkLists(local ? local.marks : [], notes.marks);
+    const mergedLinks = mergeLinkLists(local ? local.links : [], notes.links);
+
     await dbPut("notes", {
-      id: docId, marks: notes.marks, links: notes.links || [], savedAt: notes.savedAt });
-    console.log(`pulled ${notes.marks.length} marks for this paper from the folder`);
+      id: docId, marks: merged, links: mergedLinks, savedAt: Date.now() });
+
+    console.log(`merged folder copy: ${(local ? local.marks.length : 0)} local + ` +
+                `${notes.marks.length} on disk = ${merged.length} marks, ` +
+                `${weigh(merged)} characters of writing`);
     return true;
   }
   return false;
@@ -337,10 +411,6 @@ async function syncFromFolder() {
     const notes = await readJson(handle, "notes.json");
     if (!notes || !notes.id) continue;
 
-    const localNotes = await dbGet("notes", notes.id);
-    const localStamp = localNotes ? (localNotes.savedAt || 0) : -1;
-    if (notes.savedAt <= localStamp) continue;      // browser copy is current
-
     // turn figure paths back into images the app can render
     let figuresDir = null;
     for (const mark of notes.marks) {
@@ -355,11 +425,12 @@ async function syncFromFolder() {
       }
     }
 
+    const localNotes = await dbGet("notes", notes.id);
     await dbPut("notes", {
       id: notes.id,
-      marks: notes.marks,
-      links: notes.links || [],
-      savedAt: notes.savedAt,
+      marks: mergeMarkLists(localNotes ? localNotes.marks : [], notes.marks),
+      links: mergeLinkLists(localNotes ? localNotes.links : [], notes.links),
+      savedAt: Date.now(),
     });
 
     // bring the PDF itself across if this machine has never seen it

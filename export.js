@@ -112,7 +112,42 @@ function exportBoardPdf() {
   setTimeout(() => window.print(), 120);
 }
 
-$("btnExportPdf").addEventListener("click", exportBoardPdf);
+/* ---------------------------------------------------------------
+   One panel, three destinations. They exist for different places:
+   the PDF goes to an iPad to be written on, the Markdown goes to a
+   notes app or a repository, the handoff goes to a chat window.
+   --------------------------------------------------------------- */
+
+console.log("export.js loaded, build " + BUILD);
+
+function openExportPanel() {
+  if (!state.marks.length) { toast("Nothing to export yet"); return; }
+
+  const fromPaper = state.marks.filter((m) => m.page != null).length;
+  const mine = state.marks.length - fromPaper;
+  const threads = state.marks.filter((m) => (m.thread || []).length).length;
+
+  $("exportSummary").textContent =
+    `${state.title || "Untitled"} — ${fromPaper} marks from the paper, ` +
+    `${mine} of my own, ${state.links.length} links, ${threads} threads.`;
+
+  $("exportModal").hidden = false;
+}
+
+function closeExportPanel() { $("exportModal").hidden = true; }
+
+$("btnExport").addEventListener("click", openExportPanel);
+$("btnExportClose").addEventListener("click", closeExportPanel);
+
+$("exportModal").addEventListener("click", (e) => {
+  if (e.target === $("exportModal")) closeExportPanel();
+});
+
+$("btnExportPdf").addEventListener("click", () => {
+  closeExportPanel();
+  // let the panel disappear before the print dialog takes over
+  setTimeout(exportBoardPdf, 60);
+});
 
 
 /* ---------------------------------------------------------------
@@ -171,4 +206,9 @@ function exportMarkdown() {
   toast("Markdown saved");
 }
 
-$("btnExportMd").addEventListener("click", exportMarkdown);
+$("btnExportMd").addEventListener("click", () => { closeExportPanel(); exportMarkdown(); });
+
+// these two live in handoff.js, which loads after this file.
+// Wrapping them means the name is resolved at click time, not now.
+$("btnHandoff").addEventListener("click", () => { closeExportPanel(); downloadHandoff(); });
+$("btnHandoffCopy").addEventListener("click", () => { closeExportPanel(); copyHandoff(); });

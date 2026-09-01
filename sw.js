@@ -9,7 +9,7 @@
    will keep serving the old one.
    --------------------------------------------------------------- */
 
-const CACHE_VERSION = "marginalia-v2";
+const CACHE_VERSION = "marginalia-v3";
 
 const SHELL = [
   "./",

@@ -3,6 +3,11 @@
    Loaded first; everything else builds on it.
    --------------------------------------------------------------- */
 
+/* Bump this whenever you change a file. It prints on load, so a
+   stale cached script is visible immediately instead of showing up
+   as a button that mysteriously does nothing. */
+const BUILD = "2026-09-01a";
+
 const COLORS = [
   { id: "yellow", css: "--c-yellow" },
   { id: "green",  css: "--c-green"  },
