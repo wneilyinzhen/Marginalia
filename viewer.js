@@ -682,6 +682,11 @@ async function addMark({ page, body, text, rects, image, garbled, kind }) {
 
 function deleteMark(id) {
   snapshot("delete mark");
+
+  tombstone(id);
+  // links to a deleted mark go too, and are recorded as gone
+  state.links.filter((l) => l.from === id || l.to === id).forEach((l) => tombstone(l.id));
+
   state.marks = state.marks.filter((m) => m.id !== id);
   state.links = state.links.filter((l) => l.from !== id && l.to !== id);
   saveMarks();

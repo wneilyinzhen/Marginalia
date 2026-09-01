@@ -209,21 +209,22 @@ function mergeMark(a, b) {
   return out;
 }
 
-function mergeMarkLists(mine, theirs) {
+function mergeMarkLists(mine, theirs, deleted) {
   const byId = new Map();
   for (const m of theirs || []) byId.set(m.id, m);
   for (const m of mine || []) {
     const other = byId.get(m.id);
     byId.set(m.id, other ? mergeMark(m, other) : m);
   }
-  return [...byId.values()];
+  // anything deliberately removed on either side stays removed
+  return [...byId.values()].filter((m) => !isDeleted(m.id, deleted));
 }
 
-function mergeLinkLists(mine, theirs) {
+function mergeLinkLists(mine, theirs, deleted) {
   const byId = new Map();
   for (const l of theirs || []) byId.set(l.id, l);
   for (const l of mine || []) byId.set(l.id, l);
-  return [...byId.values()];
+  return [...byId.values()].filter((l) => !isDeleted(l.id, deleted));
 }
 
 /* How much real work a set of marks represents. Used only to log
@@ -255,9 +256,17 @@ async function writePaperFolder(paper, marks) {
      notes and its conversations. */
   const onDisk = await readJson(dir, "notes.json");
 
+  const isOpenPaper = paper.id === state.docId;
+  let deleted = isOpenPaper ? state.deleted : (paper.deleted || []);
+
   if (onDisk && onDisk.marks) {
-    const before = weigh(onDisk.marks);
-    marks = mergeMarkLists(marks, onDisk.marks);
+    deleted = mergeDeleted(deleted, onDisk.deleted);
+
+    /* Compare against what should still exist. Measuring the raw
+       disk copy would count marks you deliberately removed, so an
+       ordinary delete would look like data loss and be blocked. */
+    const before = weigh((onDisk.marks || []).filter((m) => !isDeleted(m.id, deleted)));
+    marks = mergeMarkLists(marks, onDisk.marks, deleted);
     const after = weigh(marks);
 
     if (after < before) {
@@ -267,14 +276,16 @@ async function writePaperFolder(paper, marks) {
       return;
     }
 
-    // keep the merged version in the browser too, so the two agree
-    if (paper.id === state.docId) {
+    if (isOpenPaper) {
       state.marks = marks;
-      state.links = mergeLinkLists(state.links, onDisk.links);
+      state.links = mergeLinkLists(state.links, onDisk.links, deleted);
+      state.deleted = deleted;
       if (typeof renderDesk === "function") renderDesk();
       if (typeof paintAllHighlights === "function") paintAllHighlights();
     }
   }
+
+  paper.deletedForDisk = deleted;
 
   // the PDF, written once — no point rewriting megabytes every save
   if (paper.file && !(await fileExists(dir, "paper.pdf"))) {
@@ -317,6 +328,7 @@ async function writePaperFolder(paper, marks) {
     savedAt: Date.now(),
     marks: forDisk,
     links: (paper.id === state.docId ? state.links : (paper.links || [])),
+    deleted: paper.deletedForDisk || [],
   }, null, 2));
 }
 
@@ -346,6 +358,7 @@ async function syncAllToFolder() {
   for (const paper of papers) {
     const record = await dbGet("notes", paper.id);
     paper.links = record ? record.links || [] : [];
+    paper.deleted = record ? record.deleted || [] : [];
     await writePaperFolder(paper, record ? record.marks : []);
   }
   console.log(`wrote ${papers.length} papers to ${folderState.handle.name}`);
@@ -386,11 +399,13 @@ async function syncPaperFromFolder(docId) {
 
     // fold the folder copy into whatever this browser already has
     const local = await dbGet("notes", docId);
-    const merged = mergeMarkLists(local ? local.marks : [], notes.marks);
-    const mergedLinks = mergeLinkLists(local ? local.links : [], notes.links);
+    const deleted = mergeDeleted(local ? local.deleted : [], notes.deleted);
+    const merged = mergeMarkLists(local ? local.marks : [], notes.marks, deleted);
+    const mergedLinks = mergeLinkLists(local ? local.links : [], notes.links, deleted);
 
     await dbPut("notes", {
-      id: docId, marks: merged, links: mergedLinks, savedAt: Date.now() });
+      id: docId, marks: merged, links: mergedLinks,
+      deleted: deleted, savedAt: Date.now() });
 
     console.log(`merged folder copy: ${(local ? local.marks.length : 0)} local + ` +
                 `${notes.marks.length} on disk = ${merged.length} marks, ` +
@@ -426,10 +441,12 @@ async function syncFromFolder() {
     }
 
     const localNotes = await dbGet("notes", notes.id);
+    const deletedIds = mergeDeleted(localNotes ? localNotes.deleted : [], notes.deleted);
     await dbPut("notes", {
       id: notes.id,
-      marks: mergeMarkLists(localNotes ? localNotes.marks : [], notes.marks),
-      links: mergeLinkLists(localNotes ? localNotes.links : [], notes.links),
+      marks: mergeMarkLists(localNotes ? localNotes.marks : [], notes.marks, deletedIds),
+      links: mergeLinkLists(localNotes ? localNotes.links : [], notes.links, deletedIds),
+      deleted: deletedIds,
       savedAt: Date.now(),
     });
 

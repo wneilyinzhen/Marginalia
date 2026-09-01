@@ -6,7 +6,7 @@
 /* Bump this whenever you change a file. It prints on load, so a
    stale cached script is visible immediately instead of showing up
    as a button that mysteriously does nothing. */
-const BUILD = "2026-09-01b";
+const BUILD = "2026-09-01c";
 
 const COLORS = [
   { id: "yellow", css: "--c-yellow" },
@@ -55,7 +55,7 @@ const state = {
   zoom: 1,
   deskOpen: false, boardOpen: false, libraryOpen: false, searchOpen: false,
   mode: "select",
-  marks: [], links: [],
+  marks: [], links: [], deleted: [],
   kind: "yellow", focusId: null,
   filterColors: null,          // null = show everything
   canvasEl: null, dpr: 1, topZ: 10,
@@ -102,6 +102,7 @@ function snapshot(description) {
     description: description,
     marks: JSON.parse(JSON.stringify(state.marks)),
     links: JSON.parse(JSON.stringify(state.links)),
+    deleted: JSON.parse(JSON.stringify(state.deleted)),
   });
   if (undoStack.length > UNDO_LIMIT) undoStack.shift();
 }
@@ -112,6 +113,7 @@ function undo() {
 
   state.marks = previous.marks;
   state.links = previous.links;
+  state.deleted = previous.deleted || [];
   saveMarks();
 
   paintAllHighlights();
@@ -276,6 +278,7 @@ function saveMarks() {
         id: state.docId,
         marks: state.marks,
         links: state.links,
+        deleted: state.deleted,
         savedAt: Date.now(),
       });
       if (typeof scheduleFolderSave === "function") scheduleFolderSave();
@@ -289,7 +292,32 @@ async function loadMarks() {
   const record = await dbGet("notes", state.docId);
   state.marks = record ? record.marks || [] : [];
   state.links = record ? record.links || [] : [];
+  state.deleted = record ? record.deleted || [] : [];
   undoStack.length = 0;
+}
+
+/* A deletion has to be recorded, not just acted on.
+
+   Two copies of a paper are reconciled by combining their marks. A
+   mark you removed here still exists in the other copy, so a plain
+   combine puts it straight back. Keeping a list of what was
+   deliberately removed is what lets a deletion win over a copy that
+   simply hasn't heard about it yet. */
+function tombstone(id) {
+  if (!state.deleted.some((d) => d.id === id)) {
+    state.deleted.push({ id, at: Date.now() });
+  }
+}
+
+function isDeleted(id, list) {
+  return (list || []).some((d) => d.id === id);
+}
+
+function mergeDeleted(a, b) {
+  const byId = new Map();
+  for (const d of a || []) byId.set(d.id, d);
+  for (const d of b || []) byId.set(d.id, d);
+  return [...byId.values()];
 }
 
 async function listPapers() {

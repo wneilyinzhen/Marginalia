@@ -233,6 +233,7 @@ function cycleRelation(linkId) {
 
 function removeLink(linkId) {
   snapshot("remove link");
+  tombstone(linkId);
   state.links = state.links.filter((l) => l.id !== linkId);
   saveMarks();
   drawLinks();
