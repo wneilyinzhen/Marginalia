@@ -12,7 +12,7 @@
 <link rel="apple-touch-icon" href="icon.svg">
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
-<link rel="stylesheet" href="style.css">
+<link rel="stylesheet" href="style.css?v=20260901a">
 </head>
 <body>
 
@@ -212,15 +212,15 @@
   </div>
 </div>
 
-<script src="store.js"></script>
-<script src="viewer.js"></script>
-<script src="notes.js"></script>
-<script src="links.js"></script>
-<script src="search.js"></script>
-<script src="folder.js"></script>
-<script src="export.js"></script>
-<script src="ai.js"></script>
-<script src="handoff.js"></script>
+<script src="store.js?v=20260901a"></script>
+<script src="viewer.js?v=20260901a"></script>
+<script src="notes.js?v=20260901a"></script>
+<script src="links.js?v=20260901a"></script>
+<script src="search.js?v=20260901a"></script>
+<script src="folder.js?v=20260901a"></script>
+<script src="export.js?v=20260901a"></script>
+<script src="ai.js?v=20260901a"></script>
+<script src="handoff.js?v=20260901a"></script>
 
 <script>
   /* Register the service worker so the app is installable and opens
@@ -229,7 +229,7 @@
      where service workers aren't allowed. */
   if ("serviceWorker" in navigator && location.protocol !== "file:") {
     window.addEventListener("load", () => {
-      navigator.serviceWorker.register("sw.js").catch((err) =>
+      navigator.serviceWorker.register("sw.js?v=20260901a").catch((err) =>
         console.log("service worker not registered:", err.message));
     });
   }

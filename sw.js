@@ -9,21 +9,17 @@
    will keep serving the old one.
    --------------------------------------------------------------- */
 
-const CACHE_VERSION = "marginalia-v3";
+const CACHE_VERSION = "marginalia-v4";
 
+/* Only the entry point is precached. Everything else is fetched on
+   demand with a ?v= query string, which is what actually forces a
+   refresh: a changed query means a different URL, so no browser and
+   no cache anywhere can hand back the old file. Bump the version in
+   index.html when you change something and the problem cannot
+   happen. */
 const SHELL = [
   "./",
   "./index.html",
-  "./style.css",
-  "./store.js",
-  "./viewer.js",
-  "./notes.js",
-  "./links.js",
-  "./search.js",
-  "./folder.js",
-  "./export.js",
-  "./ai.js",
-  "./handoff.js",
   "./icon.svg",
   "./manifest.webmanifest",
 ];
