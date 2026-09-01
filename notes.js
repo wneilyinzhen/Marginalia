@@ -188,6 +188,13 @@ async function reopenPaper(id) {
    ORDERING AND FILTERING
    ============================================================= */
 
+/* Passing the colour that's already active turns marking off. */
+function setKind(id) {
+  state.kind = (id && id === state.kind) ? null : id;
+  document.body.classList.toggle("no-marking", !state.kind);
+  renderDesk();
+}
+
 function orderedMarks() {
   const fromPaper = state.marks.filter((m) => m.page != null);
   const ideas     = state.marks.filter((m) => m.page == null);
@@ -235,14 +242,20 @@ function markBody(mark) {
 }
 
 function renderDesk(scrollToFocus) {
-  // colour picker
+  /* Colour picker. Clicking the active colour switches marking off,
+     so you can drag through paragraphs with the cursor the way you
+     would on any page without saving anything. */
   $("kinds").innerHTML = COLORS.map((c) => `
-    <button class="swatch ${colorId(state.kind) === c.id ? "on" : ""}"
-            data-kind="${c.id}" style="--sw: var(${c.css})" title="${c.id}"></button>`).join("");
+    <button class="swatch ${state.kind === c.id ? "on" : ""}"
+            data-kind="${c.id}" style="--sw: var(${c.css})"
+            title="${c.id}${state.kind === c.id ? " — click again to stop marking" : ""}"></button>`).join("")
+    + `<span class="markstate ${state.kind ? "" : "off"}" id="markState">${
+        state.kind ? "marking" : "reading only"}</span>`;
 
   $("kinds").querySelectorAll("[data-kind]").forEach((btn) => {
-    btn.addEventListener("click", () => { state.kind = btn.dataset.kind; renderDesk(); });
+    btn.addEventListener("click", () => setKind(btn.dataset.kind));
   });
+  $("markState").addEventListener("click", () => setKind(state.kind ? null : COLORS[0].id));
 
   // colour filter — a separate row, so picking and filtering never blur
   const active = state.filterColors;
@@ -558,7 +571,17 @@ document.addEventListener("keydown", (e) => {
   }
 
   const n = Number(e.key);
-  if (n >= 1 && n <= COLORS.length) { state.kind = COLORS[n - 1].id; renderDesk(); }
+  if (n >= 1 && n <= COLORS.length) setKind(COLORS[n - 1].id);
+
+  // backtick is the quickest way to stop and start marking
+  if (e.key === "`") setKind(state.kind ? null : COLORS[0].id);
+
+  if ((e.key === "Delete" || e.key === "Backspace") && state.focusId) {
+    e.preventDefault();
+    deleteMark(state.focusId);
+    state.focusId = null;
+    hideMarkMenu();
+  }
 });
 
 

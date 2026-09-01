@@ -383,6 +383,10 @@ document.addEventListener("mouseup", handleSelection);
 async function handleSelection() {
   if (!state.pdf || state.boardOpen || state.mode === "capture") return;
 
+  // marking switched off: let the browser's own selection behave
+  // like it does on any other page, and save nothing
+  if (!state.kind) return;
+
   const selection = window.getSelection();
   if (!selection || selection.isCollapsed) return;
 
@@ -426,6 +430,106 @@ async function handleSelection() {
     garbled,
   });
 }
+
+
+/* =============================================================
+   CLICKING A HIGHLIGHT
+
+   The highlight boxes sit under the invisible text layer, so they
+   can't receive clicks themselves without breaking text selection.
+   Instead we listen on the page and work out which mark, if any,
+   sits under the pointer. Same result, no fight over z-order.
+   ============================================================= */
+
+document.addEventListener("click", (event) => {
+  if (state.boardOpen || state.mode === "capture") return;
+
+  // a click inside the menu is for the menu
+  if (event.target.closest("#markMenu")) return;
+
+  const host = event.target.closest(".page");
+  if (!host) { hideMarkMenu(); return; }
+
+  // a drag that selected text isn't a click on a highlight
+  const selection = window.getSelection();
+  if (selection && !selection.isCollapsed) return;
+
+  const pageNum = Number(host.dataset.page);
+  const vp = state.viewports[pageNum];
+  if (!vp) return;
+
+  const bounds = host.getBoundingClientRect();
+  const x = (event.clientX - bounds.left) / vp.width;
+  const y = (event.clientY - bounds.top) / vp.height;
+
+  // newest first, so a highlight drawn over another wins
+  const hit = [...state.marks].reverse().find((m) =>
+    m.page === pageNum && passesFilter(m) &&
+    (m.rects || []).some((r) => x >= r.x && x <= r.x + r.w &&
+                                y >= r.y && y <= r.y + r.h));
+
+  if (!hit) { hideMarkMenu(); return; }
+
+  state.focusId = hit.id;
+  paintHighlights(pageNum);
+  renderDesk();
+  showMarkMenu(hit, event.clientX, event.clientY);
+});
+
+function showMarkMenu(mark, clientX, clientY) {
+  let menu = $("markMenu");
+  if (!menu) {
+    menu = document.createElement("div");
+    menu.id = "markMenu";
+    menu.className = "markmenu";
+    document.body.appendChild(menu);
+  }
+
+  menu.innerHTML =
+    COLORS.map((c) => `
+      <button class="mmswatch ${colorId(mark.kind) === c.id ? "on" : ""}"
+              data-recolor="${c.id}" style="--sw: var(${c.css})"
+              title="${c.id}"></button>`).join("") +
+    `<span class="mmdiv"></span>
+     <button class="mmbtn" data-open-note title="Open the note">Note</button>
+     <button class="mmbtn danger" data-erase title="Remove this highlight">Erase</button>`;
+
+  menu.style.left = Math.min(clientX - 10, window.innerWidth - 250) + "px";
+  menu.style.top = (clientY + 14) + "px";
+  menu.hidden = false;
+
+  menu.querySelectorAll("[data-recolor]").forEach((b) =>
+    b.addEventListener("click", () => {
+      snapshot("recolour mark");
+      mark.kind = b.dataset.recolor;
+      saveMarks();
+      paintHighlights(mark.page);
+      renderDesk();
+      showMarkMenu(mark, clientX, clientY);
+    }));
+
+  menu.querySelector("[data-open-note]").addEventListener("click", async () => {
+    hideMarkMenu();
+    if (!state.deskOpen) await setDesk(true);
+    renderDesk(true);
+  });
+
+  menu.querySelector("[data-erase]").addEventListener("click", () => {
+    hideMarkMenu();
+    deleteMark(mark.id);
+    toast("Highlight removed — Ctrl+Z to undo");
+  });
+}
+
+function hideMarkMenu() {
+  const menu = $("markMenu");
+  if (menu) menu.hidden = true;
+}
+
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") hideMarkMenu();
+});
+$("reader").addEventListener("scroll", hideMarkMenu);
 
 
 /* =============================================================
@@ -525,6 +629,7 @@ function buildCaptureLayer(host, pageNum) {
     const vp = state.viewports[pageNum];
     await addMark({
       page: pageNum,
+      kind: state.kind || COLORS[0].id,
       body: "figure",
       text: textNearRegion(host, x0, y0, w, h),
       image: cropRegion(pageNum, x0, y0, w, h),
@@ -553,12 +658,12 @@ $("btnCapture").addEventListener("click", () => setMode("capture"));
    MARKS
    ============================================================= */
 
-async function addMark({ page, body, text, rects, image, garbled }) {
+async function addMark({ page, body, text, rects, image, garbled, kind }) {
   snapshot("add mark");
 
   const mark = {
     id: makeId(),
-    page, kind: state.kind, body, text, rects,
+    page, kind: kind || state.kind || COLORS[0].id, body, text, rects,
     image: image || null,
     garbled: !!garbled,
     note: "",
