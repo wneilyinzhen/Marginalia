@@ -1,0 +1,28 @@
+# Secrets — never commit these
+.env
+.env.*
+*.key
+secrets.json
+
+# The Python prototype's environment
+.venv/
+venv/
+__pycache__/
+*.pyc
+
+# Papers and notes are yours, not the repo's
+Saved Files/
+MarginaliaLibrary/
+*.pdf
+*.md.bak
+prototype/paper.txt
+
+# OS noise
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editors
+.vscode/
+.idea/
+*.swp

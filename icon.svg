@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="112" fill="#18181B"/>
+  <!-- a page -->
+  <rect x="128" y="96" width="230" height="320" rx="10" fill="#FFFFFF"/>
+  <!-- lines of text, one of them marked -->
+  <rect x="158" y="146" width="170" height="13" rx="6" fill="#E4E4E7"/>
+  <rect x="158" y="182" width="170" height="13" rx="6" fill="#E4E4E7"/>
+  <rect x="158" y="218" width="140" height="13" rx="6" fill="#F2C744"/>
+  <rect x="158" y="254" width="170" height="13" rx="6" fill="#F2C744"/>
+  <rect x="158" y="290" width="100" height="13" rx="6" fill="#E4E4E7"/>
+  <rect x="158" y="326" width="170" height="13" rx="6" fill="#E4E4E7"/>
+  <rect x="158" y="362" width="120" height="13" rx="6" fill="#E4E4E7"/>
+  <!-- the margin: your note beside it -->
+  <rect x="374" y="206" width="10" height="76" rx="5" fill="#7C5C1E"/>
+</svg>

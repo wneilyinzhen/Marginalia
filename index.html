@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Marginalia</title>
+
+<meta name="description" content="A PDF reader for people who want to read the paper themselves.">
+<meta name="theme-color" content="#F7F7F8">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon.svg">
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="bar">
+  <span class="wordmark">Marginalia</span>
+  <span class="docname" id="docname">No paper open</span>
+
+  <div class="seg" id="segMode">
+    <button id="btnSelect" class="on" title="Highlight text  (Esc)">Select</button>
+    <button id="btnCapture" title="Capture a plot or equation  (C)">Capture</button>
+  </div>
+
+  <div class="seg">
+    <button id="btnZoomOut" title="Zoom out  (-)">&minus;</button>
+    <button id="btnZoomFit" class="on" title="Fit width  (0)">100%</button>
+    <button id="btnZoomIn" title="Zoom in  (+)">+</button>
+  </div>
+
+  <div class="group">
+    <button class="btn icon" id="btnPrev">&#8593;</button>
+    <span class="pageno" id="pageno">&mdash;</span>
+    <button class="btn icon" id="btnNext">&#8595;</button>
+  </div>
+
+  <button class="btn" id="btnAi" title="Connect your API key">AI</button>
+  <button class="btn" id="btnSearch"  title="Search  (Ctrl+F)">Search</button>
+  <button class="btn" id="btnOpen">Open</button>
+  <button class="btn" id="btnFolder">Folder</button>
+  <button class="btn" id="btnLibrary" title="Saved papers  (L)">Library</button>
+  <button class="btn" id="btnBoard"   title="Board  (B)">Board</button>
+  <button class="btn" id="btnDesk"    title="Notes  (N)">Notes</button>
+
+  <input type="file" id="fileInput" accept="application/pdf" hidden>
+</header>
+
+<div class="shell">
+
+  <main class="reader" id="reader">
+    <div class="dropzone" id="dropzone">
+      <h1>Drop a paper here.</h1>
+      <p>Or use Open. Nothing is uploaded anywhere &mdash; the file is read
+         inside this page and never leaves your computer.</p>
+    </div>
+
+    <!-- every page lives in here, stacked -->
+    <div class="stage" id="stage" hidden></div>
+  </main>
+
+  <aside class="desk" id="desk">
+    <div class="deskhead">
+      <div class="deskheadtop">
+        <span class="eyebrow" id="deskcount">Nothing marked yet</span>
+        <button class="closedesk" id="btnDeskClose" title="Hide  (Esc)">&times;</button>
+      </div>
+      <div class="kinds" id="kinds"></div>
+      <div class="filters" id="filters"></div>
+    </div>
+    <div class="marks" id="marks"></div>
+  </aside>
+
+</div>
+
+<!-- board -->
+<div class="board" id="board" hidden>
+  <div class="boardbar">
+    <span class="wordmark">Board</span>
+    <span class="eyebrow" id="boardcount"></span>
+    <span style="flex:1"></span>
+    <button class="btn" id="btnQuestion" title="Ask about the selected card">Question</button>
+    <button class="btn" id="btnTakeaway" title="A takeaway built from YOUR notes">Takeaway</button>
+    <button class="btn" id="btnAddNote" title="New note of your own">+ Note</button>
+    <button class="btn" id="btnTidy" title="Re-arrange into a grid">Tidy</button>
+    <button class="btn" id="btnExportPdf" title="Save the board as a PDF">Export PDF</button>
+    <button class="btn" id="btnExportMd" title="Save the notes as Markdown">Export MD</button>
+    <button class="btn" id="btnHandoff" title="Everything as one file for claude.ai — right-click to copy instead">Handoff</button>
+    <button class="btn" id="btnBoardClose">Close</button>
+  </div>
+  <div class="boardwrap">
+    <div class="boardsurface" id="boardsurface"></div>
+
+    <aside class="askpanel" id="askPanel">
+      <div class="askhead">
+        <span class="eyebrow">Ask about this</span>
+        <div class="seg small">
+          <button id="scopeNear" class="on" title="Send only the marked page and its neighbours — cheap">Nearby</button>
+          <button id="scopeAll" title="Send the whole paper, cached — thorough">Whole</button>
+        </div>
+        <button class="closedesk" id="btnAskClose" title="Hide">&times;</button>
+      </div>
+      <div class="asktarget" id="askTarget"></div>
+      <div class="askthread" id="askThread"></div>
+      <div class="askfoot">
+        <div class="presets" id="askPresets"></div>
+        <div class="askrow">
+          <textarea id="askInput" rows="2"
+            placeholder="Ask about the selected card. Say &quot;outside this paper&quot; to go beyond it."></textarea>
+          <button class="btn primary" id="askSend">Ask</button>
+        </div>
+        <div class="askmeter" id="askMeter"></div>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<!-- library -->
+<div class="board" id="library" hidden>
+  <div class="boardbar">
+    <span class="wordmark">Library</span>
+    <span class="eyebrow" id="libraryCount"></span>
+    <span style="flex:1"></span>
+    <button class="btn" id="btnLibraryClose">Close</button>
+  </div>
+  <div class="libbody">
+    <nav class="subjects" id="subjects"></nav>
+    <div class="librarylist" id="libraryList"></div>
+  </div>
+</div>
+
+<!-- search -->
+<div class="searchpanel" id="searchPanel" hidden>
+  <div class="searchbar">
+    <input id="searchInput" placeholder="Search this paper and all your notes" autocomplete="off">
+    <button class="btn" id="btnSearchClose">Close</button>
+  </div>
+  <div class="searchbody">
+    <div class="searchcol">
+      <div class="searchhead" id="searchPaperHead">In this paper</div>
+      <div class="searchresults" id="searchPaper"></div>
+    </div>
+    <div class="searchcol">
+      <div class="searchhead" id="searchNotesHead">In my notes</div>
+      <div class="searchresults" id="searchNotes"></div>
+    </div>
+  </div>
+</div>
+
+<!-- API key settings -->
+<div class="modal" id="aiModal" hidden>
+  <div class="modalcard">
+    <h2>Connect the AI</h2>
+    <p>Your own Anthropic API key, from console.anthropic.com. It stays in this
+       browser and is never written to the sync folder. Calls go straight from
+       this page to the API &mdash; there is no server in between.</p>
+    <label>API key</label>
+    <input id="aiKeyInput" type="password" placeholder="sk-ant-..." autocomplete="off">
+    <label>Model</label>
+    <input id="aiModelInput" placeholder="claude-sonnet-5">
+    <div class="modalrow">
+      <button class="btn" id="btnAiCancel">Cancel</button>
+      <button class="btn primary" id="btnAiSave">Save &amp; test</button>
+    </div>
+  </div>
+</div>
+
+<script src="store.js"></script>
+<script src="viewer.js"></script>
+<script src="notes.js"></script>
+<script src="links.js"></script>
+<script src="search.js"></script>
+<script src="folder.js"></script>
+<script src="export.js"></script>
+<script src="ai.js"></script>
+<script src="handoff.js"></script>
+
+<script>
+  /* Register the service worker so the app is installable and opens
+     offline. It only caches the app's own files — papers and notes
+     live in IndexedDB and your sync folder. Skipped on file://,
+     where service workers aren't allowed. */
+  if ("serviceWorker" in navigator && location.protocol !== "file:") {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("sw.js").catch((err) =>
+        console.log("service worker not registered:", err.message));
+    });
+  }
+</script>
+</body>
+</html>
