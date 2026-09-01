@@ -41,6 +41,8 @@ on from what was just said.
 
 ## What the AI will and won't do
 
+First, you can connect Marginalia directly to your API address for in-situ conversation. Or, you can export your note and conversation to your chat bot using export function.
+
 Four rules, and they are the product rather than a disclaimer.
 
 **It never summarizes the paper.** It has the full text so it can be accurate,
