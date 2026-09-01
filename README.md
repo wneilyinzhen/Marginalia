@@ -97,7 +97,7 @@ arrows you drew. The format most likely to still open in fifteen years.
 
 **Handoff to a chat** — everything as one file: the rules above, your marks,
 your interpretations, the links, and every exchange so far. Attach it and the
-PDF to claude.ai and carry on there under your subscription instead of paying
+PDF to claude.ai and carry on there under your agentic AI subscription model instead of paying
 per token.
 
 Everything also mirrors continuously to a folder you choose — one directory per
@@ -143,6 +143,8 @@ of a cent per question. A meter under the ask box shows what you've spent.
 
 > A key held in a browser is readable by anyone with access to that computer.
 > Fine on your own machine; set a spend limit in the console anyway.
+
+Otherwise, use Export -- Handoff to your AI chat to continue discussion there.
 
 ---
 
