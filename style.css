@@ -1,0 +1,966 @@
+/* ---------------------------------------------------------------
+   Marginalia — flat, quiet, current.
+
+   No gradients, no bevels, no texture. Structure comes from
+   hairlines and spacing; emphasis comes from one near-black and
+   one blue. A reading tool should recede.
+   --------------------------------------------------------------- */
+
+:root {
+  --ui: -apple-system, BlinkMacSystemFont, "Segoe UI Variable Text",
+        "Segoe UI", Inter, Roboto, sans-serif;
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+
+  --bg:      #F7F7F8;   /* window */
+  --surface: #FFFFFF;   /* cards, bars */
+  --sunken:  #F4F4F5;   /* fields, tracks */
+  --hover:   rgba(0,0,0,.045);
+
+  --line:      rgba(0,0,0,.08);
+  --line-soft: rgba(0,0,0,.05);
+
+  --ink:   #18181B;
+  --ink-2: #71717A;
+  --ink-3: #A1A1AA;
+
+  --accent: #2563EB;
+  --danger: #DC2626;
+
+  /* my own writing — a different voice from the paper's */
+  --mine:      #7C5C1E;
+  --mine-bg:   #FDF9EE;
+  --mine-line: #E8DDC0;
+
+  /* highlight palette */
+  --c-yellow: #F2C744;
+  --c-green:  #5DBE84;
+  --c-blue:   #4A9EDE;
+  --c-purple: #9B7BE0;
+  --c-pink:   #E77BA6;
+  --c-gray:   #A0A6AE;
+
+  --r-sm: 6px;
+  --r-md: 9px;
+  --r-lg: 13px;
+
+  --shadow: 0 1px 2px rgba(0,0,0,.04), 0 0 0 1px var(--line);
+  --shadow-lift: 0 2px 4px rgba(0,0,0,.05), 0 8px 24px rgba(0,0,0,.09),
+                 0 0 0 1px var(--line);
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+
+html, body {
+  height: 100%;
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--ui);
+  -webkit-font-smoothing: antialiased;
+}
+
+
+/* =============================================================
+   BAR
+   ============================================================= */
+
+.bar {
+  height: 52px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 14px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+  position: relative;
+  z-index: 20;
+}
+
+.group { display: flex; align-items: center; gap: 3px; }
+
+.wordmark {
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: -.01em;
+  color: var(--ink-3);
+  white-space: nowrap;
+}
+
+.docname {
+  flex: 1;
+  min-width: 20px;
+  font-size: 13.5px;
+  font-weight: 550;
+  letter-spacing: -.01em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pageno {
+  font-size: 12.5px;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-2);
+  min-width: 54px;
+  text-align: center;
+}
+
+.btn {
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  padding: 6px 11px;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background .12s ease;
+}
+.btn:hover:not(:disabled) { background: var(--hover); }
+.btn:active:not(:disabled) { background: rgba(0,0,0,.08); }
+.btn:disabled { color: var(--ink-3); cursor: default; }
+.btn.icon { padding: 6px 9px; min-width: 30px; }
+
+.btn.on,
+body.desk-open #btnDesk,
+#btnFolder.on {
+  background: var(--ink);
+  color: #fff;
+}
+.btn.on:hover, body.desk-open #btnDesk:hover, #btnFolder.on:hover {
+  background: #2F2F35;
+}
+#btnFolder.on { max-width: 160px; overflow: hidden; text-overflow: ellipsis; }
+
+/* segmented control */
+.seg {
+  display: flex;
+  padding: 2px;
+  gap: 2px;
+  border-radius: 8px;
+  background: var(--sunken);
+}
+.seg button {
+  border: 0;
+  background: none;
+  cursor: pointer;
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--ink-2);
+  padding: 4px 11px;
+  border-radius: 6px;
+  min-width: 30px;
+  font-variant-numeric: tabular-nums;
+  transition: background .12s ease, color .12s ease;
+}
+.seg button:hover:not(:disabled):not(.on) { color: var(--ink); }
+.seg button:disabled { color: var(--ink-3); cursor: default; }
+.seg button.on {
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: 0 1px 2px rgba(0,0,0,.07), 0 0 0 1px var(--line-soft);
+}
+
+
+/* =============================================================
+   SHELL
+   ============================================================= */
+
+.shell { display: flex; height: calc(100% - 52px); }
+.reader { flex: 1 1 auto; min-width: 0; overflow: auto; }
+
+.desk {
+  display: none;
+  flex: 0 0 392px;
+  overflow: auto;
+  background: var(--surface);
+  border-left: 1px solid var(--line);
+}
+body.desk-open .desk { display: block; }
+
+.dropzone {
+  max-width: 440px;
+  margin: 100px auto;
+  padding: 46px 34px;
+  text-align: center;
+  background: var(--surface);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow);
+}
+.dropzone h1 {
+  font-size: 22px; font-weight: 600; letter-spacing: -.022em; margin: 0 0 10px;
+}
+.dropzone p { color: var(--ink-2); font-size: 13.5px; line-height: 1.65; margin: 0; }
+body.dragging .dropzone { box-shadow: 0 0 0 2px var(--accent); }
+
+
+/* ---------- the page ---------- */
+
+.stage { padding: 24px 16px 80px; }
+
+.page {
+  position: relative;
+  margin: 0 auto;
+  background: var(--surface);
+  border-radius: 4px;
+  box-shadow: 0 1px 2px rgba(0,0,0,.06), 0 6px 22px rgba(0,0,0,.08),
+              0 0 0 1px var(--line-soft);
+}
+.page canvas { display: block; border-radius: 4px; }
+
+.highlightlayer { position: absolute; inset: 0; pointer-events: none; mix-blend-mode: multiply; }
+.hbox { position: absolute; border-radius: 2px; opacity: .4; }
+.hbox.focused { opacity: .6; box-shadow: 0 0 0 1.5px var(--ink); }
+.hbox.region { opacity: .15; outline: 1.5px solid currentColor; }
+
+.textlayer {
+  position: absolute; inset: 0; overflow: hidden;
+  line-height: 1; user-select: text;
+}
+.textlayer span {
+  position: absolute; color: transparent; white-space: pre;
+  transform-origin: 0 0; cursor: text;
+}
+.textlayer ::selection { background: rgba(37,99,235,.22); }
+
+.capturelayer {
+  position: absolute; inset: 0; cursor: crosshair;
+  touch-action: none; background: rgba(24,24,27,.03);
+}
+.capturebox {
+  position: absolute; border: 1.5px dashed var(--accent);
+  background: rgba(37,99,235,.08); border-radius: 3px;
+}
+
+
+/* =============================================================
+   NOTES DESK
+   ============================================================= */
+
+.deskhead {
+  position: sticky; top: 0; z-index: 5;
+  padding: 13px 14px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+}
+.deskheadtop { display: flex; align-items: center; gap: 10px; }
+
+.eyebrow { font-size: 12px; font-weight: 550; color: var(--ink-3); }
+.deskheadtop .eyebrow { flex: 1; }
+
+.closedesk {
+  background: none; border: 0; cursor: pointer;
+  color: var(--ink-3); font-size: 17px; line-height: 1;
+  padding: 2px 5px; border-radius: 5px;
+}
+.closedesk:hover { color: var(--ink); background: var(--hover); }
+
+/* colour picker — swatches, nothing else */
+.kinds { display: flex; gap: 7px; margin-top: 11px; align-items: center; }
+.swatch {
+  width: 22px; height: 22px; padding: 0;
+  border: 0; border-radius: 999px; cursor: pointer;
+  background: var(--sw);
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,.10);
+  transition: transform .12s ease, box-shadow .12s ease;
+}
+.swatch:hover { transform: scale(1.12); }
+.swatch.on {
+  box-shadow: inset 0 0 0 1px rgba(0,0,0,.10),
+              0 0 0 2px var(--surface), 0 0 0 4px var(--ink);
+}
+
+.marks { padding: 12px; display: flex; flex-direction: column; gap: 10px; padding-bottom: 130px; }
+
+.empty-note { padding: 26px 4px; color: var(--ink-2); font-size: 13.5px; line-height: 1.65; }
+
+.mark {
+  position: relative;
+  background: var(--surface);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow);
+  padding: 12px 13px 13px 15px;
+  overflow: hidden;
+}
+.mark.focused { box-shadow: 0 1px 2px rgba(0,0,0,.04), 0 0 0 2px var(--accent); }
+.mark::before {
+  content: ""; position: absolute; left: 0; top: 0; bottom: 0;
+  width: 3px; background: var(--stripe, var(--line));
+}
+
+/* your own note reads differently at a glance: warm ground,
+   sans-serif body, dashed edge */
+.mark.idea {
+  background: var(--mine-bg);
+  box-shadow: 0 1px 2px rgba(0,0,0,.04), 0 0 0 1px var(--mine-line);
+}
+.mark.idea::before { background: repeating-linear-gradient(
+  to bottom, var(--mine) 0 4px, transparent 4px 8px); }
+.mark.idea .markhead { color: var(--mine); }
+.mark.idea textarea {
+  font-family: var(--ui);
+  font-size: 13.5px;
+  background: rgba(255,255,255,.65);
+  box-shadow: inset 0 0 0 1px var(--mine-line);
+}
+
+.markhead {
+  display: flex; gap: 8px; align-items: center;
+  font-size: 11.5px; color: var(--ink-3); margin-bottom: 8px;
+}
+.markhead .goto {
+  background: none; border: 0; padding: 0; cursor: pointer;
+  font: inherit; font-weight: 550; color: var(--accent);
+}
+.markhead .goto:hover { text-decoration: underline; }
+.markhead .kill {
+  margin-left: auto; background: none; border: 0; cursor: pointer;
+  color: var(--ink-3); font-size: 15px; line-height: 1;
+  padding: 1px 4px; border-radius: 5px;
+}
+.markhead .kill:hover { color: var(--danger); background: rgba(220,38,38,.08); }
+
+.quote { font-family: var(--serif); font-size: 14px; line-height: 1.47; margin: 0 0 11px; }
+
+.snap {
+  display: block; max-width: 100%; border-radius: var(--r-sm);
+  box-shadow: 0 0 0 1px var(--line); margin: 0 0 11px; background: #fff;
+}
+.garbled { font-size: 11.5px; color: #A16207; margin-bottom: 7px; }
+.nearby { font-size: 12px; line-height: 1.5; color: var(--ink-3); margin: 0 0 11px; }
+
+.notelabel { font-size: 11.5px; font-weight: 500; color: var(--ink-3); margin-bottom: 6px; }
+
+textarea {
+  width: 100%; border: 0; border-radius: var(--r-sm);
+  background: var(--sunken);
+  box-shadow: inset 0 0 0 1px var(--line-soft);
+  padding: 9px 10px; resize: vertical; min-height: 62px;
+  font-family: var(--serif); font-size: 14px; line-height: 1.5; color: var(--ink);
+  transition: box-shadow .12s ease, background .12s ease;
+}
+textarea:focus {
+  outline: none; background: var(--surface);
+  box-shadow: 0 0 0 2px var(--accent);
+}
+textarea::placeholder { color: var(--ink-3); }
+
+
+/* =============================================================
+   BOARD AND LIBRARY
+   ============================================================= */
+
+.board {
+  position: fixed; inset: 0; z-index: 40;
+  background: var(--bg);
+  display: flex; flex-direction: column;
+}
+
+.boardbar {
+  height: 52px; flex: 0 0 52px;
+  display: flex; align-items: center; gap: 8px; padding: 0 14px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+}
+
+.boardsurface {
+  flex: 1; position: relative; overflow: auto;
+  background-image: radial-gradient(circle, #DEDEE2 1px, transparent 1px);
+  background-size: 26px 26px;
+}
+.boardinner { position: relative; width: 4000px; height: 3000px; }
+
+.note {
+  position: absolute; width: 280px;
+  background: var(--surface);
+  border-radius: var(--r-md);
+  border-top: 3px solid var(--stripe, var(--line));
+  box-shadow: var(--shadow-lift);
+  padding: 10px 12px 12px;
+}
+.note.dragging { box-shadow: 0 4px 10px rgba(0,0,0,.08), 0 22px 48px rgba(0,0,0,.16), 0 0 0 1px var(--line); }
+
+.note.idea {
+  background: var(--mine-bg);
+  border-top: 3px dashed var(--mine);
+  box-shadow: 0 1px 2px rgba(0,0,0,.04), 0 8px 24px rgba(0,0,0,.07),
+              0 0 0 1px var(--mine-line);
+}
+.note.idea .notehead { color: var(--mine); }
+.note.idea textarea {
+  font-family: var(--ui); font-size: 13px;
+  background: rgba(255,255,255,.7);
+  box-shadow: inset 0 0 0 1px var(--mine-line);
+}
+
+.notehead {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 11px; color: var(--ink-3); margin-bottom: 8px;
+  cursor: grab; user-select: none;
+}
+.note.dragging .notehead { cursor: grabbing; }
+.notehead .jump {
+  background: none; border: 0; padding: 0; cursor: pointer;
+  font: inherit; font-weight: 550; color: var(--accent);
+}
+.notehead .jump:hover { text-decoration: underline; }
+.notehead .kill {
+  margin-left: auto; background: none; border: 0; cursor: pointer;
+  color: var(--ink-3); font-size: 15px; line-height: 1;
+  padding: 1px 4px; border-radius: 5px;
+}
+.notehead .kill:hover { color: var(--danger); background: rgba(220,38,38,.08); }
+
+.notequote {
+  font-family: var(--serif); font-size: 13px; line-height: 1.45;
+  margin-bottom: 9px; max-height: 132px; overflow: hidden;
+}
+.notequote img {
+  max-width: 100%; display: block; border-radius: var(--r-sm);
+  box-shadow: 0 0 0 1px var(--line);
+}
+.note textarea { min-height: 56px; font-size: 13px; padding: 8px 9px; }
+
+.boardempty {
+  position: absolute; top: 70px; left: 0; right: 0;
+  text-align: center; color: var(--ink-3); font-size: 13.5px;
+}
+.boardhint {
+  position: absolute; top: 20px; left: 28px;
+  font-size: 11.5px; color: var(--ink-3); pointer-events: none;
+}
+
+
+/* ---------- library: subjects on the left, papers on the right ---------- */
+
+.libbody { flex: 1; display: flex; overflow: hidden; }
+
+.subjects {
+  flex: 0 0 232px;
+  overflow: auto;
+  padding: 18px 12px 60px;
+  border-right: 1px solid var(--line);
+  background: var(--surface);
+}
+
+.subjhead {
+  font-size: 11.5px; font-weight: 600; color: var(--ink-3);
+  padding: 0 10px; margin-bottom: 9px;
+}
+
+.subject {
+  display: flex; align-items: center; gap: 9px;
+  width: 100%; text-align: left;
+  border: 0; background: none; cursor: pointer;
+  font: inherit; font-size: 13.5px; color: var(--ink);
+  padding: 7px 10px; border-radius: 7px; margin-bottom: 2px;
+  transition: background .12s ease;
+}
+.subject:hover { background: var(--hover); }
+.subject.on { background: var(--ink); color: #fff; }
+.subject .count {
+  margin-left: auto; font-size: 11.5px;
+  font-variant-numeric: tabular-nums; color: var(--ink-3);
+}
+.subject.on .count { color: rgba(255,255,255,.6); }
+
+/* lit up while a paper is being dragged over it */
+.subject.drop {
+  background: rgba(37,99,235,.10);
+  box-shadow: inset 0 0 0 1.5px var(--accent);
+  color: var(--ink);
+}
+
+.subject .remove {
+  background: none; border: 0; cursor: pointer; padding: 0 2px;
+  color: var(--ink-3); font-size: 14px; line-height: 1; display: none;
+}
+.subject:hover .remove { display: block; }
+.subject .remove:hover { color: var(--danger); }
+
+.newsubject {
+  display: flex; gap: 6px; margin-top: 10px; padding: 0 4px;
+}
+.newsubject input {
+  flex: 1; min-width: 0; border: 0; border-radius: var(--r-sm);
+  background: var(--sunken); box-shadow: inset 0 0 0 1px var(--line-soft);
+  padding: 7px 9px; font: inherit; font-size: 13px; color: var(--ink);
+}
+.newsubject input:focus { outline: none; box-shadow: 0 0 0 2px var(--accent); }
+
+.librarylist { flex: 1; overflow: auto; padding: 22px 26px 90px; }
+
+.shelfrow {
+  display: flex; align-items: center; gap: 14px;
+  padding: 12px 14px; margin-bottom: 7px;
+  background: var(--surface);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow);
+  cursor: grab;
+}
+.shelfrow:active { cursor: grabbing; }
+.shelfrow.dragging { opacity: .45; }
+
+.grip { color: var(--ink-3); font-size: 13px; line-height: 1; user-select: none; }
+
+.shelfopen {
+  flex: 1; min-width: 0; text-align: left;
+  background: none; border: 0; padding: 0; cursor: pointer;
+  font-family: var(--serif); font-size: 15px; color: var(--ink);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.shelfopen:hover { color: var(--accent); }
+
+.shelftag {
+  font-size: 11px; color: var(--ink-2);
+  background: var(--sunken); padding: 3px 8px; border-radius: 999px;
+  white-space: nowrap;
+}
+
+.shelfmeta {
+  font-size: 11.5px; font-variant-numeric: tabular-nums;
+  color: var(--ink-3); white-space: nowrap;
+}
+
+.shelfrow .kill {
+  background: none; border: 0; cursor: pointer;
+  color: var(--ink-3); font-size: 16px; line-height: 1;
+  padding: 1px 4px; border-radius: 5px;
+}
+.shelfrow .kill:hover { color: var(--danger); background: rgba(220,38,38,.08); }
+
+
+/* =============================================================
+   PRINT VIEW
+
+   Two clearly different objects on paper: passages from the
+   article in serif with a solid coloured rule, and your own
+   notes in sans on a tinted ground with a dashed rule. On an
+   iPad at arm's length you can tell them apart without reading.
+   ============================================================= */
+
+#printview { display: none; }
+body.printing > *:not(#printview) { display: none !important; }
+body.printing #printview { display: block; }
+
+@page { size: letter portrait; margin: .55in .6in; }
+
+@media print {
+  html, body {
+    height: auto; background: #fff;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+}
+
+.p-head { border-bottom: 1.5px solid #18181B; padding-bottom: 10px; margin-bottom: 18px; }
+.p-head h1 { font-family: var(--serif); font-weight: 400; font-size: 21px; margin: 0 0 6px; }
+.p-meta { font-size: 9px; color: #71717A; line-height: 1.7; }
+
+.p-cards { column-count: 2; column-gap: 22px; }
+
+/* from the paper */
+.p-card {
+  break-inside: avoid; page-break-inside: avoid;
+  border-left: 3px solid var(--stripe, #A1A1AA);
+  padding: 0 0 11px 10px;
+  margin: 0 0 15px;
+}
+.p-label {
+  font-family: var(--ui);
+  font-size: 8px; letter-spacing: .1em; text-transform: uppercase;
+  color: #71717A; margin-bottom: 5px;
+}
+.p-quote { font-family: var(--serif); font-size: 10.5px; line-height: 1.42; margin-bottom: 7px; }
+.p-img { max-width: 100%; display: block; border: .5px solid #E4E4E7; margin-bottom: 7px; }
+.p-note {
+  font-family: var(--serif); font-size: 10.5px; line-height: 1.45;
+  border-left: 2px solid #E4E4E7; padding-left: 8px; margin-bottom: 7px;
+}
+
+/* mine */
+.p-card.mine {
+  border-left: 3px dashed var(--mine);
+  background: var(--mine-bg);
+  padding: 9px 10px 11px;
+  border-radius: 3px;
+}
+.p-card.mine .p-label { color: var(--mine); font-weight: 700; }
+.p-card.mine .p-note {
+  font-family: var(--ui);
+  font-size: 10px;
+  line-height: 1.5;
+  color: #4A3A12;
+  border-left: 0;
+  padding-left: 0;
+}
+
+.p-space { height: 44px; }
+.p-card.mine .p-space { height: 30px; }
+
+/* =============================================================
+   CONTINUOUS SCROLL
+   ============================================================= */
+
+.stage {
+  padding: 22px 16px 120px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+}
+
+.page .pagenum {
+  position: absolute;
+  top: 50%; left: 50%; transform: translate(-50%, -50%);
+  font-size: 30px; font-weight: 500; color: #E4E4E7;
+  pointer-events: none; user-select: none;
+}
+.page canvas + .pagenum,
+.page canvas ~ .pagenum { display: none; }
+
+
+/* =============================================================
+   COLOUR FILTER
+   ============================================================= */
+
+.filters {
+  display: flex; align-items: center; gap: 6px;
+  margin-top: 9px; padding-top: 9px;
+  border-top: 1px solid var(--line-soft);
+}
+.filterlabel { font-size: 11px; color: var(--ink-3); margin-right: 2px; }
+
+.fdot {
+  width: 14px; height: 14px; padding: 0;
+  border: 0; border-radius: 999px; cursor: pointer;
+  background: var(--bg);
+  box-shadow: inset 0 0 0 1.5px var(--sw);
+  transition: background .12s ease, transform .12s ease;
+}
+.fdot.on { background: var(--sw); }
+.fdot:hover { transform: scale(1.15); }
+
+.fclear {
+  margin-left: 4px; border: 0; background: none; cursor: pointer;
+  font: inherit; font-size: 11px; color: var(--accent);
+}
+.fclear:hover { text-decoration: underline; }
+
+.linkcount { font-size: 11px; color: var(--ink-3); }
+
+
+/* =============================================================
+   LINKS ON THE BOARD
+   ============================================================= */
+
+.linklayer {
+  position: absolute; inset: 0;
+  pointer-events: none;
+  overflow: visible;
+}
+.linklayer * { pointer-events: auto; }
+
+.linkpath { fill: none; stroke-width: 1.8; pointer-events: none; }
+.linkhit  { fill: none; stroke: transparent; stroke-width: 16; cursor: pointer; }
+.linkghost {
+  fill: none; stroke: var(--accent); stroke-width: 1.8;
+  stroke-dasharray: 5 4; pointer-events: none;
+}
+
+.linklabel { cursor: pointer; }
+.linklabel text {
+  font-family: var(--ui); font-size: 11px; font-weight: 500;
+  user-select: none;
+}
+.linklabel rect { filter: drop-shadow(0 1px 2px rgba(0,0,0,.08)); }
+.linkclose { font-size: 14px; }
+.linkclose:hover { fill: var(--danger) !important; }
+
+.note { z-index: 2; }
+
+/* the dot you drag to make a link */
+.linkknob {
+  position: absolute;
+  right: -7px; bottom: -7px;
+  width: 15px; height: 15px;
+  border: 2px solid var(--surface);
+  border-radius: 999px;
+  background: var(--ink-3);
+  cursor: crosshair;
+  padding: 0;
+  opacity: 0;
+  transition: opacity .12s ease, background .12s ease, transform .12s ease;
+}
+.note:hover .linkknob { opacity: 1; }
+.linkknob:hover { background: var(--accent); transform: scale(1.25); }
+
+.note.linktarget {
+  box-shadow: 0 0 0 2px var(--accent), 0 8px 24px rgba(0,0,0,.10);
+}
+
+
+/* =============================================================
+   SEARCH
+   ============================================================= */
+
+.searchpanel {
+  position: fixed; inset: 0; z-index: 50;
+  background: var(--bg);
+  display: flex; flex-direction: column;
+}
+
+.searchbar {
+  height: 60px; flex: 0 0 60px;
+  display: flex; align-items: center; gap: 10px;
+  padding: 0 16px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--line);
+}
+.searchbar input {
+  flex: 1; min-width: 0;
+  border: 0; border-radius: 8px;
+  background: var(--sunken);
+  box-shadow: inset 0 0 0 1px var(--line-soft);
+  padding: 10px 13px;
+  font: inherit; font-size: 15px; color: var(--ink);
+}
+.searchbar input:focus { outline: none; box-shadow: 0 0 0 2px var(--accent); }
+
+.searchbody { flex: 1; display: flex; overflow: hidden; }
+.searchcol {
+  flex: 1; min-width: 0; display: flex; flex-direction: column;
+  border-right: 1px solid var(--line);
+}
+.searchcol:last-child { border-right: 0; }
+
+.searchhead {
+  padding: 13px 18px;
+  font-size: 11.5px; font-weight: 600; color: var(--ink-3);
+  border-bottom: 1px solid var(--line-soft);
+  background: var(--surface);
+}
+.searchresults { flex: 1; overflow: auto; padding: 12px 14px 70px; }
+
+.sresult {
+  position: relative;
+  padding: 11px 13px 11px 15px;
+  margin-bottom: 8px;
+  background: var(--surface);
+  border-radius: var(--r-md);
+  box-shadow: var(--shadow);
+  cursor: pointer;
+}
+.sresult::before {
+  content: ""; position: absolute; left: 0; top: 0; bottom: 0;
+  width: 3px; background: var(--stripe, transparent);
+}
+.sresult:hover { box-shadow: 0 1px 2px rgba(0,0,0,.04), 0 0 0 1.5px var(--accent); }
+
+.smeta {
+  font-size: 11px; color: var(--ink-3); margin-bottom: 6px;
+  display: flex; gap: 7px; align-items: center;
+}
+.selsewhere {
+  background: var(--sunken); border-radius: 999px;
+  padding: 2px 7px; font-size: 10px;
+}
+.ssnip {
+  font-family: var(--serif); font-size: 13px; line-height: 1.5;
+  color: var(--ink); margin-bottom: 4px;
+}
+.ssnip.mine {
+  font-family: var(--ui); font-size: 12.5px;
+  color: var(--mine); background: var(--mine-bg);
+  border-radius: var(--r-sm); padding: 6px 8px; margin-top: 6px;
+}
+.ssnip mark { background: rgba(242,199,68,.5); color: inherit; border-radius: 2px; }
+
+
+/* =============================================================
+   TOAST
+   ============================================================= */
+
+.toast {
+  position: fixed; left: 50%; bottom: 26px;
+  transform: translateX(-50%) translateY(10px);
+  background: var(--ink); color: #fff;
+  padding: 10px 16px; border-radius: 999px;
+  font-size: 13px; z-index: 90;
+  opacity: 0; pointer-events: none;
+  transition: opacity .16s ease, transform .16s ease;
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* =============================================================
+   AI — the question panel on the board
+   ============================================================= */
+
+.btn.primary { background: var(--ink); color: #fff; }
+.btn.primary:hover:not(:disabled) { background: #2F2F35; }
+
+#btnAi.on { background: var(--ink); color: #fff; }
+
+.boardwrap { flex: 1; display: flex; overflow: hidden; }
+.boardwrap .boardsurface { flex: 1; }
+
+.askpanel {
+  display: none;
+  flex: 0 0 400px;
+  border-left: 1px solid var(--line);
+  background: var(--surface);
+  flex-direction: column;
+  overflow: hidden;
+}
+body.ask-open .askpanel { display: flex; }
+
+.askhead {
+  display: flex; align-items: center; gap: 10px;
+  padding: 13px 14px;
+  border-bottom: 1px solid var(--line);
+}
+.askhead .eyebrow { flex: 1; }
+
+.asktarget { padding: 12px 14px 0; }
+.asktcard {
+  position: relative;
+  background: var(--bg);
+  border-radius: var(--r-md);
+  padding: 10px 12px 10px 14px;
+  overflow: hidden;
+}
+.asktcard::before {
+  content: ""; position: absolute; left: 0; top: 0; bottom: 0;
+  width: 3px; background: var(--stripe, var(--line));
+}
+.asktmeta { font-size: 11px; color: var(--ink-3); margin-bottom: 5px; }
+.asktbody { font-family: var(--serif); font-size: 13px; line-height: 1.45; }
+.asktbody img { max-width: 100%; border-radius: var(--r-sm); display: block; }
+
+.asknone { padding: 18px 14px; color: var(--ink-3); font-size: 13px; }
+
+.askthread { flex: 1; overflow: auto; padding: 12px 14px 20px; }
+
+.turn { margin-bottom: 16px; }
+.turnq {
+  font-size: 13px; font-weight: 550; color: var(--ink);
+  background: var(--sunken);
+  border-radius: var(--r-md);
+  padding: 8px 11px;
+  margin-bottom: 8px;
+}
+.turna {
+  font-size: 13.5px; line-height: 1.6; color: var(--ink);
+  padding: 0 2px;
+}
+.turnmeta {
+  font-size: 10.5px; color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+  margin-top: 5px; padding: 0 2px;
+}
+
+/* the two kinds of claim look different, permanently */
+.pcite {
+  border: 0; background: none; padding: 0; cursor: pointer;
+  font: inherit; font-weight: 550; color: var(--accent);
+}
+.pcite:hover { text-decoration: underline; }
+
+.outside {
+  background: var(--mine-bg);
+  border-radius: 4px;
+  padding: 1px 3px;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+.outsidetag {
+  font-size: 10px; font-weight: 600; letter-spacing: .04em;
+  text-transform: uppercase; color: var(--mine);
+  margin-right: 5px;
+}
+
+.askfoot {
+  border-top: 1px solid var(--line);
+  padding: 10px 14px 13px;
+  background: var(--surface);
+}
+.presets { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 8px; }
+.preset {
+  border: 0; border-radius: 999px; cursor: pointer;
+  background: var(--sunken); color: var(--ink-2);
+  font: inherit; font-size: 11.5px; font-weight: 500;
+  padding: 5px 10px;
+}
+.preset:hover { color: var(--ink); background: rgba(0,0,0,.08); }
+
+.askrow { display: flex; gap: 7px; align-items: flex-end; }
+.askrow textarea {
+  flex: 1; min-height: 42px; font-family: var(--ui); font-size: 13.5px;
+}
+
+.threadbadge { font-size: 10.5px; color: var(--accent); }
+
+.note.focused { box-shadow: 0 0 0 2px var(--ink), 0 8px 24px rgba(0,0,0,.10); }
+
+
+/* =============================================================
+   MODAL
+   ============================================================= */
+
+.modal {
+  position: fixed; inset: 0; z-index: 80;
+  background: rgba(24,24,27,.32);
+  display: flex; align-items: center; justify-content: center;
+}
+.modalcard {
+  width: 420px; max-width: calc(100vw - 40px);
+  background: var(--surface);
+  border-radius: var(--r-lg);
+  box-shadow: var(--shadow-lift);
+  padding: 22px 22px 18px;
+}
+.modalcard h2 { font-size: 17px; font-weight: 600; margin: 0 0 8px; letter-spacing: -.01em; }
+.modalcard p { font-size: 12.5px; color: var(--ink-2); line-height: 1.6; margin: 0 0 16px; }
+.modalcard label {
+  display: block; font-size: 11.5px; font-weight: 550;
+  color: var(--ink-3); margin: 10px 0 5px;
+}
+.modalcard input {
+  width: 100%; border: 0; border-radius: var(--r-sm);
+  background: var(--sunken);
+  box-shadow: inset 0 0 0 1px var(--line-soft);
+  padding: 9px 11px; font: inherit; font-size: 13.5px; color: var(--ink);
+}
+.modalcard input:focus { outline: none; box-shadow: 0 0 0 2px var(--accent); }
+.modalrow { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; }
+
+.truncated {
+  display: flex; align-items: center; gap: 8px;
+  margin-top: 8px; padding: 7px 10px;
+  background: var(--mine-bg);
+  border-radius: var(--r-sm);
+  font-size: 11.5px; color: var(--mine);
+}
+.continuebtn {
+  border: 0; border-radius: 999px; cursor: pointer;
+  background: var(--mine); color: #fff;
+  font: inherit; font-size: 11px; font-weight: 550;
+  padding: 3px 10px;
+}
+.continuebtn:hover { filter: brightness(1.15); }
+
+/* scope switch and cost meter in the ask panel */
+.seg.small button { font-size: 11px; padding: 3px 9px; min-width: 0; }
+.askhead .seg { margin-left: auto; }
+
+.askmeter {
+  margin-top: 7px;
+  font-size: 10.5px;
+  color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}

@@ -5,12 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Marginalia</title>
 
-<meta name="description" content="A PDF reader for people who want to read the paper themselves.">
-<meta name="theme-color" content="#F7F7F8">
-<link rel="manifest" href="manifest.webmanifest">
-<link rel="icon" href="icon.svg" type="image/svg+xml">
-<link rel="apple-touch-icon" href="icon.svg">
-
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <link rel="stylesheet" href="style.css">
 </head>
@@ -176,18 +170,5 @@
 <script src="export.js"></script>
 <script src="ai.js"></script>
 <script src="handoff.js"></script>
-
-<script>
-  /* Register the service worker so the app is installable and opens
-     offline. It only caches the app's own files — papers and notes
-     live in IndexedDB and your sync folder. Skipped on file://,
-     where service workers aren't allowed. */
-  if ("serviceWorker" in navigator && location.protocol !== "file:") {
-    window.addEventListener("load", () => {
-      navigator.serviceWorker.register("sw.js").catch((err) =>
-        console.log("service worker not registered:", err.message));
-    });
-  }
-</script>
 </body>
 </html>
